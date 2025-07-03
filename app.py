@@ -968,7 +968,7 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #666; padding: 20px;'>
-        <p>🤖 Powered by <strong>Künstliche Intelligenz</strong> | 🐍 Built with <strong>Streamlit</strong> | 💼 HR Intelligence Platform</p>
+        <p>🤖 Powered by <strong>Künstliche Intelligenz</strong>  💼 HR Intelligence Platform</p>
         <p><small>Alle Berechnungen sind Schätzungen. Konsultieren Sie einen HR-Experten für finale Entscheidungen.</small></p>
     </div>
     """, unsafe_allow_html=True)
