@@ -188,8 +188,6 @@ def create_pdf_report(results, context_data, ai_insights=None, ai_scenarios=None
     buffer.seek(0)
     return buffer
 
-def get_ai_insights(groq_client, calculation_data, context_data):
-
 def create_excel_report(results, context_data, ai_insights=None):
     """Generate a comprehensive Excel report"""
     buffer = io.BytesIO()
