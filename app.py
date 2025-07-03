@@ -8,16 +8,6 @@ import json
 from datetime import datetime
 import io
 import base64
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
-import xlsxwriter
-from pptx import Presentation
-from pptx.util import Inches, Pt
-from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN
 
 # Page configuration
 st.set_page_config(
@@ -975,15 +965,15 @@ def main():
     with tab3:
         st.subheader("📄 Export & Sharing")
         
-        st.markdown("### 🚀 Professional Export Options")
+        st.markdown("### 🚀 Export Options")
         st.info("Wählen Sie das passende Format für Ihren Anwendungsfall:")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("**📊 Für Präsentationen:**")
-            if st.button("📑 PowerPoint Export", help="Ideal für Stakeholder-Präsentationen"):
-                with st.spinner("Erstelle PowerPoint-Präsentation..."):
+            st.markdown("**📊 Für detaillierte Analyse:**")
+            if st.button("📊 Excel-Daten Export", help="Strukturierte Daten für weitere Analyse"):
+                with st.spinner("Erstelle Excel-Daten..."):
                     try:
                         context_data = {
                             'hire_salary': st.session_state.get('hire_salary', 60000),
@@ -992,62 +982,17 @@ def main():
                             'prod_loss_percent': st.session_state.get('prod_loss_percent', 40)
                         }
                         
-                        ai_insights = getattr(st.session_state, 'ai_insights', None)
-                        pptx_buffer = create_powerpoint_report(results, context_data, ai_insights)
+                        summary_df, param_df = create_excel_dataframe(results, context_data)
                         
-                        st.download_button(
-                            label="📥 PowerPoint herunterladen",
-                            data=pptx_buffer,
-                            file_name=f"hr_kostenvergleich_{datetime.now().strftime('%Y%m%d_%H%M')}.pptx",
-                            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                        )
-                        st.success("✅ PowerPoint-Präsentation erstellt!")
-                    except Exception as e:
-                        st.error(f"PowerPoint-Export Fehler: {e}")
-            
-            st.markdown("**📋 Für Dokumentation:**")
-            if st.button("📄 PDF Report", help="Professioneller Bericht für Archivierung"):
-                with st.spinner("Erstelle PDF-Report..."):
-                    try:
-                        context_data = {
-                            'hire_salary': st.session_state.get('hire_salary', 60000),
-                            'vacancy_months': st.session_state.get('vacancy_months', 3),
-                            'industry': st.session_state.get('industry', 'General'),
-                            'prod_loss_percent': st.session_state.get('prod_loss_percent', 40)
-                        }
-                        
-                        ai_insights = getattr(st.session_state, 'ai_insights', None)
-                        ai_scenarios = getattr(st.session_state, 'ai_scenarios', None)
-                        pdf_buffer = create_pdf_report(results, context_data, ai_insights, ai_scenarios)
-                        
-                        st.download_button(
-                            label="📥 PDF herunterladen",
-                            data=pdf_buffer,
-                            file_name=f"hr_kostenvergleich_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                            mime="application/pdf"
-                        )
-                        st.success("✅ PDF-Report erstellt!")
-                    except Exception as e:
-                        st.error(f"PDF-Export Fehler: {e}")
-        
-        with col2:
-            st.markdown("**📊 Für Analyse:**")
-            if st.button("📊 Excel Export", help="Detaillierte Daten für weitere Analyse"):
-                with st.spinner("Erstelle Excel-Datei..."):
-                    try:
-                        context_data = {
-                            'hire_salary': st.session_state.get('hire_salary', 60000),
-                            'vacancy_months': st.session_state.get('vacancy_months', 3),
-                            'industry': st.session_state.get('industry', 'General'),
-                            'prod_loss_percent': st.session_state.get('prod_loss_percent', 40)
-                        }
-                        
-                        ai_insights = getattr(st.session_state, 'ai_insights', None)
-                        excel_buffer = create_excel_report(results, context_data, ai_insights)
+                        # Create Excel file in memory
+                        excel_buffer = io.BytesIO()
+                        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                            summary_df.to_excel(writer, sheet_name='Zusammenfassung', index=False)
+                            param_df.to_excel(writer, sheet_name='Parameter', index=False)
                         
                         st.download_button(
                             label="📥 Excel herunterladen",
-                            data=excel_buffer,
+                            data=excel_buffer.getvalue(),
                             file_name=f"hr_kostenvergleich_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         )
@@ -1055,9 +1000,9 @@ def main():
                     except Exception as e:
                         st.error(f"Excel-Export Fehler: {e}")
             
-            st.markdown("**📝 Für Bearbeitung:**")
-            if st.button("📝 Word Document", help="Editierbarer Bericht für weitere Bearbeitung"):
-                with st.spinner("Erstelle Word-Dokument..."):
+            st.markdown("**📋 Für vollständige Dokumentation:**")
+            if st.button("📄 Detaillierter CSV Report", help="Umfassender Textbericht"):
+                with st.spinner("Erstelle detaillierten Report..."):
                     try:
                         context_data = {
                             'hire_salary': st.session_state.get('hire_salary', 60000),
@@ -1068,17 +1013,24 @@ def main():
                         
                         ai_insights = getattr(st.session_state, 'ai_insights', None)
                         ai_scenarios = getattr(st.session_state, 'ai_scenarios', None)
-                        word_buffer = create_word_report(results, context_data, ai_insights, ai_scenarios)
+                        detailed_report = create_detailed_csv_report(results, context_data, ai_insights, ai_scenarios)
                         
                         st.download_button(
-                            label="📥 Word herunterladen",
-                            data=word_buffer,
-                            file_name=f"hr_kostenvergleich_{datetime.now().strftime('%Y%m%d_%H%M')}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            label="📥 Detaillierten Report herunterladen",
+                            data=detailed_report,
+                            file_name=f"hr_kostenvergleich_detail_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                            mime="text/plain"
                         )
-                        st.success("✅ Word-Dokument erstellt!")
+                        st.success("✅ Detaillierter Report erstellt!")
                     except Exception as e:
-                        st.error(f"Word-Export Fehler: {e}")
+                        st.error(f"Report-Export Fehler: {e}")
+        
+        with col2:
+            st.markdown("**📊 Für Präsentationen:**")
+            st.info("🚧 PowerPoint-Export in Entwicklung")
+            
+            st.markdown("**📝 Für Bearbeitung:**")  
+            st.info("🚧 Word-Export in Entwicklung")
         
         st.divider()
         
@@ -1135,11 +1087,11 @@ def main():
         
         # Legacy CSV export
         st.divider()
-        st.markdown("### 📊 Legacy Export")
+        st.markdown("### 📊 Einfacher Export")
         
-        # Enhanced export with AI insights
-        csv_data = "HR KOSTENVERGLEICH - DETAILBERICHT\n"
-        csv_data += "=" * 50 + "\n\n"
+        # Simple CSV export
+        csv_data = "HR KOSTENVERGLEICH - ÜBERSICHT\n"
+        csv_data += "=" * 40 + "\n\n"
         csv_data += f"Erstellt am: {datetime.now().strftime('%d.%m.%Y %H:%M')}\n"
         csv_data += f"Branche: {st.session_state.get('industry', 'General')}\n\n"
         csv_data += "PARAMETER:\n" + df_params.to_csv(index=False) + "\n"
@@ -1154,7 +1106,7 @@ def main():
             csv_data += st.session_state.ai_scenarios + "\n"
         
         st.download_button(
-            label="📥 Als CSV herunterladen (Legacy)",
+            label="📥 Einfacher CSV Export",
             data=csv_data,
             file_name=f"hr_kostenvergleich_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
             mime="text/csv"
