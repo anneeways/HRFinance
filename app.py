@@ -8,16 +8,6 @@ import json
 from datetime import datetime
 import io
 import base64
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
-import xlsxwriter
-from pptx import Presentation
-from pptx.util import Inches, Pt
-from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN
 
 # Page configuration
 st.set_page_config(
@@ -87,321 +77,146 @@ INDUSTRY_TEMPLATES = {
     }
 }
 
-def create_pdf_report(results, context_data, ai_insights=None, ai_scenarios=None):
-    """Generate a professional PDF report"""
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-    styles = getSampleStyleSheet()
-    story = []
+def create_detailed_csv_report(results, context_data, ai_insights=None, ai_scenarios=None):
+    """Generate a comprehensive CSV report"""
+    report = []
     
-    # Title
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        spaceAfter=30,
-        textColor=colors.darkblue,
-        alignment=1  # Center
-    )
-    story.append(Paragraph("HR Kostenvergleich Analyse", title_style))
-    story.append(Spacer(1, 20))
+    # Header
+    report.append("HR KOSTENVERGLEICH - DETAILBERICHT")
+    report.append("=" * 50)
+    report.append("")
+    report.append(f"Erstellt am: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+    report.append(f"Branche: {context_data.get('industry', 'General')}")
+    report.append("")
     
     # Executive Summary
-    story.append(Paragraph("Executive Summary", styles['Heading2']))
-    
-    if results['total_hire'] > results['total_salary_increase']:
-        recommendation = f"Gehaltserhöhung ist günstiger um {results['total_hire'] - results['total_salary_increase']:,.0f} €"
-        color = colors.green
-    else:
-        recommendation = f"Neubesetzung ist günstiger um {results['total_salary_increase'] - results['total_hire']:,.0f} €"
-        color = colors.blue
-    
-    summary_style = ParagraphStyle('Summary', parent=styles['Normal'], backColor=color, textColor=colors.white, leftIndent=10, rightIndent=10, spaceBefore=10, spaceAfter=10)
-    story.append(Paragraph(f"<b>Empfehlung: {recommendation}</b>", summary_style))
-    story.append(Spacer(1, 20))
-    
-    # Key Metrics Table
-    story.append(Paragraph("Kostenübersicht", styles['Heading2']))
-    
-    data = [
-        ['Kostenart', 'Betrag (€)', 'Anteil (%)'],
-        ['Neubesetzung Gesamt', f"{results['total_hire']:,.0f}", '100%'],
-        ['- Recruiting', f"{results['recruiting']['sum']:,.0f}", f"{results['recruiting']['sum']/results['total_hire']*100:.1f}%"],
-        ['- Vakanz', f"{results['vacancy']['sum']:,.0f}", f"{results['vacancy']['sum']/results['total_hire']*100:.1f}%"],
-        ['- Onboarding', f"{results['onboarding']['sum']:,.0f}", f"{results['onboarding']['sum']/results['total_hire']*100:.1f}%"],
-        ['- Produktivitätsverlust', f"{results['productivity']['sum']:,.0f}", f"{results['productivity']['sum']/results['total_hire']*100:.1f}%"],
-        ['- Weitere Kosten', f"{results['other']['sum']:,.0f}", f"{results['other']['sum']/results['total_hire']*100:.1f}%"],
-        ['- Fixkosten', f"{results['fixed']['sum']:,.0f}", f"{results['fixed']['sum']/results['total_hire']*100:.1f}%"],
-        ['', '', ''],
-        ['Gehaltserhöhung Gesamt', f"{results['total_salary_increase']:,.0f}", '100%'],
-    ]
-    
-    table = Table(data)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -2), colors.beige),
-        ('BACKGROUND', (0, -1), (-1, -1), colors.lightblue),
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    story.append(table)
-    story.append(Spacer(1, 20))
-    
-    # Parameters
-    story.append(Paragraph("Parameter", styles['Heading2']))
-    param_data = [
-        ['Parameter', 'Wert'],
-        ['Jahresgehalt (Neubesetzung)', f"{context_data.get('hire_salary', 0):,.0f} €"],
-        ['Vakanzdauer', f"{context_data.get('vacancy_months', 0)} Monate"],
-        ['Branche', context_data.get('industry', 'General')],
-        ['Produktivitätsverlust', f"{context_data.get('prod_loss_percent', 0)}%"],
-        ['Analyse-Datum', datetime.now().strftime('%d.%m.%Y %H:%M')]
-    ]
-    
-    param_table = Table(param_data)
-    param_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    story.append(param_table)
-    
-    # AI Insights if available
-    if ai_insights:
-        story.append(Spacer(1, 20))
-        story.append(Paragraph("KI-Strategieanalyse", styles['Heading2']))
-        story.append(Paragraph(ai_insights, styles['Normal']))
-    
-    if ai_scenarios:
-        story.append(Spacer(1, 20))
-        story.append(Paragraph("KI-Szenarien", styles['Heading2']))
-        story.append(Paragraph(ai_scenarios, styles['Normal']))
-    
-    doc.build(story)
-    buffer.seek(0)
-    return buffer
-
-def create_excel_report(results, context_data, ai_insights=None):
-    """Generate a comprehensive Excel report"""
-    buffer = io.BytesIO()
-    
-    with xlsxwriter.Workbook(buffer) as workbook:
-        # Formats
-        title_format = workbook.add_format({'bold': True, 'font_size': 16, 'align': 'center'})
-        header_format = workbook.add_format({'bold': True, 'bg_color': '#4472C4', 'font_color': 'white'})
-        currency_format = workbook.add_format({'num_format': '#,##0 €'})
-        percent_format = workbook.add_format({'num_format': '0.0%'})
-        
-        # Summary Sheet
-        ws1 = workbook.add_worksheet('Zusammenfassung')
-        ws1.write('A1', 'HR Kostenvergleich Analyse', title_format)
-        ws1.write('A3', 'Erstelldatum:', header_format)
-        ws1.write('B3', datetime.now().strftime('%d.%m.%Y %H:%M'))
-        
-        # Key metrics
-        ws1.write('A5', 'Kostenkategorie', header_format)
-        ws1.write('B5', 'Betrag (€)', header_format)
-        ws1.write('C5', 'Anteil (%)', header_format)
-        
-        row = 6
-        ws1.write(row, 0, 'Neubesetzung Gesamt')
-        ws1.write(row, 1, results['total_hire'], currency_format)
-        ws1.write(row, 2, 1.0, percent_format)
-        
-        categories = [
-            ('Recruiting', results['recruiting']['sum']),
-            ('Vakanz', results['vacancy']['sum']),
-            ('Onboarding', results['onboarding']['sum']),
-            ('Produktivitätsverlust', results['productivity']['sum']),
-            ('Weitere Kosten', results['other']['sum']),
-            ('Fixkosten', results['fixed']['sum'])
-        ]
-        
-        for cat, amount in categories:
-            row += 1
-            ws1.write(row, 0, f"  - {cat}")
-            ws1.write(row, 1, amount, currency_format)
-            ws1.write(row, 2, amount/results['total_hire'], percent_format)
-        
-        row += 2
-        ws1.write(row, 0, 'Gehaltserhöhung Gesamt')
-        ws1.write(row, 1, results['total_salary_increase'], currency_format)
-        
-        # Detailed breakdown sheet
-        ws2 = workbook.add_worksheet('Detailkosten')
-        ws2.write('A1', 'Detaillierte Kostenaufschlüsselung', title_format)
-        
-        # Recruiting details
-        row = 3
-        ws2.write(row, 0, 'Recruiting-Kosten', header_format)
-        row += 1
-        for item, cost in results['recruiting']['costs'].items():
-            ws2.write(row, 0, item)
-            ws2.write(row, 1, cost, currency_format)
-            row += 1
-        
-        # Parameters sheet
-        ws3 = workbook.add_worksheet('Parameter')
-        ws3.write('A1', 'Eingabeparameter', title_format)
-        
-        params = [
-            ('Jahresgehalt (Neubesetzung)', f"{context_data.get('hire_salary', 0):,.0f} €"),
-            ('Vakanzdauer', f"{context_data.get('vacancy_months', 0)} Monate"),
-            ('Branche', context_data.get('industry', 'General')),
-            ('Produktivitätsverlust', f"{context_data.get('prod_loss_percent', 0)}%")
-        ]
-        
-        row = 3
-        for param, value in params:
-            ws3.write(row, 0, param)
-            ws3.write(row, 1, value)
-            row += 1
-        
-        # Auto-adjust column widths
-        for ws in [ws1, ws2, ws3]:
-            ws.set_column('A:A', 25)
-            ws.set_column('B:B', 15)
-            ws.set_column('C:C', 12)
-    
-    buffer.seek(0)
-    return buffer
-
-def create_powerpoint_report(results, context_data, ai_insights=None):
-    """Generate a PowerPoint presentation"""
-    prs = Presentation()
-    
-    # Slide 1: Title
-    slide1 = prs.slides.add_slide(prs.slide_layouts[0])
-    title = slide1.shapes.title
-    subtitle = slide1.placeholders[1]
-    title.text = "HR Kostenvergleich Analyse"
-    subtitle.text = f"Erstellt am {datetime.now().strftime('%d.%m.%Y')}\nBranche: {context_data.get('industry', 'General')}"
-    
-    # Slide 2: Executive Summary
-    slide2 = prs.slides.add_slide(prs.slide_layouts[1])
-    slide2.shapes.title.text = "Executive Summary"
-    
-    if results['total_hire'] > results['total_salary_increase']:
-        recommendation = f"Gehaltserhöhung ist günstiger\nErsparnis: {results['total_hire'] - results['total_salary_increase']:,.0f} €"
-    else:
-        recommendation = f"Neubesetzung ist günstiger\nErsparnis: {results['total_salary_increase'] - results['total_hire']:,.0f} €"
-    
-    content = slide2.placeholders[1]
-    content.text = f"""Empfehlung: {recommendation}
-
-Neubesetzung Gesamtkosten: {results['total_hire']:,.0f} €
-Gehaltserhöhung Kosten: {results['total_salary_increase']:,.0f} €
-
-Größte Kostenfaktoren:
-• Fixkosten: {results['fixed']['sum']:,.0f} €
-• Produktivitätsverlust: {results['productivity']['sum']:,.0f} €
-• Recruiting: {results['recruiting']['sum']:,.0f} €"""
-    
-    # Slide 3: Cost Breakdown
-    slide3 = prs.slides.add_slide(prs.slide_layouts[1])
-    slide3.shapes.title.text = "Kostenaufschlüsselung Neubesetzung"
-    
-    breakdown_text = f"""Recruiting: {results['recruiting']['sum']:,.0f} € ({results['recruiting']['sum']/results['total_hire']*100:.1f}%)
-Vakanz: {results['vacancy']['sum']:,.0f} € ({results['vacancy']['sum']/results['total_hire']*100:.1f}%)
-Onboarding: {results['onboarding']['sum']:,.0f} € ({results['onboarding']['sum']/results['total_hire']*100:.1f}%)
-Produktivitätsverlust: {results['productivity']['sum']:,.0f} € ({results['productivity']['sum']/results['total_hire']*100:.1f}%)
-Weitere Kosten: {results['other']['sum']:,.0f} € ({results['other']['sum']/results['total_hire']*100:.1f}%)
-Fixkosten: {results['fixed']['sum']:,.0f} € ({results['fixed']['sum']/results['total_hire']*100:.1f}%)
-
-Gesamtsumme: {results['total_hire']:,.0f} €"""
-    
-    slide3.placeholders[1].text = breakdown_text
-    
-    # Slide 4: AI Insights (if available)
-    if ai_insights:
-        slide4 = prs.slides.add_slide(prs.slide_layouts[1])
-        slide4.shapes.title.text = "KI-Strategieanalyse"
-        slide4.placeholders[1].text = ai_insights[:1000] + "..." if len(ai_insights) > 1000 else ai_insights
-    
-    buffer = io.BytesIO()
-    prs.save(buffer)
-    buffer.seek(0)
-    return buffer
-
-def create_word_report(results, context_data, ai_insights=None, ai_scenarios=None):
-    """Generate a Word document report"""
-    from docx import Document
-    from docx.shared import Inches
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
-    
-    doc = Document()
-    
-    # Title
-    title = doc.add_heading('HR Kostenvergleich Analyse', 0)
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
-    # Executive Summary
-    doc.add_heading('Executive Summary', level=1)
-    
     if results['total_hire'] > results['total_salary_increase']:
         recommendation = f"Gehaltserhöhung ist günstiger um {results['total_hire'] - results['total_salary_increase']:,.0f} €"
     else:
         recommendation = f"Neubesetzung ist günstiger um {results['total_salary_increase'] - results['total_hire']:,.0f} €"
     
-    summary_para = doc.add_paragraph()
-    summary_para.add_run(f"Empfehlung: {recommendation}").bold = True
-    
-    # Cost table
-    doc.add_heading('Kostenübersicht', level=1)
-    table = doc.add_table(rows=1, cols=3)
-    table.style = 'Table Grid'
-    
-    hdr_cells = table.rows[0].cells
-    hdr_cells[0].text = 'Kostenart'
-    hdr_cells[1].text = 'Betrag (€)'
-    hdr_cells[2].text = 'Anteil (%)'
-    
-    cost_items = [
-        ('Neubesetzung Gesamt', results['total_hire'], 100),
-        ('- Recruiting', results['recruiting']['sum'], results['recruiting']['sum']/results['total_hire']*100),
-        ('- Vakanz', results['vacancy']['sum'], results['vacancy']['sum']/results['total_hire']*100),
-        ('- Onboarding', results['onboarding']['sum'], results['onboarding']['sum']/results['total_hire']*100),
-        ('- Produktivitätsverlust', results['productivity']['sum'], results['productivity']['sum']/results['total_hire']*100),
-        ('- Weitere Kosten', results['other']['sum'], results['other']['sum']/results['total_hire']*100),
-        ('- Fixkosten', results['fixed']['sum'], results['fixed']['sum']/results['total_hire']*100),
-        ('Gehaltserhöhung Gesamt', results['total_salary_increase'], 100),
-    ]
-    
-    for item, amount, percent in cost_items:
-        row_cells = table.add_row().cells
-        row_cells[0].text = item
-        row_cells[1].text = f"{amount:,.0f}"
-        row_cells[2].text = f"{percent:.1f}%"
+    report.append("EXECUTIVE SUMMARY")
+    report.append("-" * 20)
+    report.append(f"Empfehlung: {recommendation}")
+    report.append(f"Neubesetzung Gesamtkosten: {results['total_hire']:,.0f} €")
+    report.append(f"Gehaltserhöhung Kosten: {results['total_salary_increase']:,.0f} €")
+    report.append("")
     
     # Parameters
-    doc.add_heading('Parameter', level=1)
-    param_para = doc.add_paragraph()
-    param_para.add_run(f"Jahresgehalt (Neubesetzung): {context_data.get('hire_salary', 0):,.0f} €\n")
-    param_para.add_run(f"Vakanzdauer: {context_data.get('vacancy_months', 0)} Monate\n")
-    param_para.add_run(f"Branche: {context_data.get('industry', 'General')}\n")
-    param_para.add_run(f"Produktivitätsverlust: {context_data.get('prod_loss_percent', 0)}%\n")
-    param_para.add_run(f"Analyse-Datum: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+    report.append("PARAMETER")
+    report.append("-" * 20)
+    report.append(f"Jahresgehalt (Neubesetzung): {context_data.get('hire_salary', 0):,.0f} €")
+    report.append(f"Vakanzdauer: {context_data.get('vacancy_months', 0)} Monate")
+    report.append(f"Produktivitätsverlust: {context_data.get('prod_loss_percent', 0)}%")
+    report.append("")
+    
+    # Cost Breakdown
+    report.append("KOSTENAUFSCHLÜSSELUNG NEUBESETZUNG")
+    report.append("-" * 40)
+    report.append(f"Recruiting: {results['recruiting']['sum']:,.0f} € ({results['recruiting']['sum']/results['total_hire']*100:.1f}%)")
+    report.append(f"Vakanz: {results['vacancy']['sum']:,.0f} € ({results['vacancy']['sum']/results['total_hire']*100:.1f}%)")
+    report.append(f"Onboarding: {results['onboarding']['sum']:,.0f} € ({results['onboarding']['sum']/results['total_hire']*100:.1f}%)")
+    report.append(f"Produktivitätsverlust: {results['productivity']['sum']:,.0f} € ({results['productivity']['sum']/results['total_hire']*100:.1f}%)")
+    report.append(f"Weitere Kosten: {results['other']['sum']:,.0f} € ({results['other']['sum']/results['total_hire']*100:.1f}%)")
+    report.append(f"Fixkosten: {results['fixed']['sum']:,.0f} € ({results['fixed']['sum']/results['total_hire']*100:.1f}%)")
+    report.append(f"GESAMT: {results['total_hire']:,.0f} €")
+    report.append("")
+    
+    # Detailed costs
+    report.append("DETAILKOSTEN")
+    report.append("-" * 20)
+    report.append("Recruiting-Details:")
+    for item, cost in results['recruiting']['costs'].items():
+        report.append(f"  {item}: {cost:,.0f} €")
+    
+    report.append("Vakanz-Details:")
+    for item, cost in results['vacancy']['costs'].items():
+        report.append(f"  {item}: {cost:,.0f} €")
+    
+    report.append("Onboarding-Details:")
+    for item, cost in results['onboarding']['costs'].items():
+        report.append(f"  {item}: {cost:,.0f} €")
+    
+    report.append("Weitere Kosten-Details:")
+    for item, cost in results['other']['costs'].items():
+        report.append(f"  {item}: {cost:,.0f} €")
+    report.append("")
     
     # AI sections
     if ai_insights:
-        doc.add_heading('KI-Strategieanalyse', level=1)
-        doc.add_paragraph(ai_insights)
+        report.append("KI-STRATEGIEANALYSE")
+        report.append("-" * 20)
+        report.append(ai_insights)
+        report.append("")
     
     if ai_scenarios:
-        doc.add_heading('KI-Szenarien', level=1)
-        doc.add_paragraph(ai_scenarios)
+        report.append("KI-SZENARIEN")
+        report.append("-" * 20)
+        report.append(ai_scenarios)
+        report.append("")
     
-    buffer = io.BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-    return buffer
+    return "\n".join(report)
+
+def create_excel_dataframe(results, context_data):
+    """Create structured data for Excel export"""
+    # Summary data
+    summary_data = {
+        'Kostenart': [
+            'Neubesetzung Gesamt',
+            '- Recruiting',
+            '- Vakanz', 
+            '- Onboarding',
+            '- Produktivitätsverlust',
+            '- Weitere Kosten',
+            '- Fixkosten',
+            '',
+            'Gehaltserhöhung Gesamt'
+        ],
+        'Betrag (€)': [
+            results['total_hire'],
+            results['recruiting']['sum'],
+            results['vacancy']['sum'],
+            results['onboarding']['sum'],
+            results['productivity']['sum'],
+            results['other']['sum'],
+            results['fixed']['sum'],
+            0,
+            results['total_salary_increase']
+        ],
+        'Anteil (%)': [
+            100.0,
+            results['recruiting']['sum']/results['total_hire']*100,
+            results['vacancy']['sum']/results['total_hire']*100,
+            results['onboarding']['sum']/results['total_hire']*100,
+            results['productivity']['sum']/results['total_hire']*100,
+            results['other']['sum']/results['total_hire']*100,
+            results['fixed']['sum']/results['total_hire']*100,
+            0,
+            100.0
+        ]
+    }
+    
+    # Parameters data
+    param_data = {
+        'Parameter': [
+            'Jahresgehalt (Neubesetzung)',
+            'Vakanzdauer',
+            'Branche',
+            'Produktivitätsverlust',
+            'Analyse-Datum'
+        ],
+        'Wert': [
+            f"{context_data.get('hire_salary', 0):,.0f} €",
+            f"{context_data.get('vacancy_months', 0)} Monate",
+            context_data.get('industry', 'General'),
+            f"{context_data.get('prod_loss_percent', 0)}%",
+            datetime.now().strftime('%d.%m.%Y %H:%M')
+        ]
+    }
+    
+    return pd.DataFrame(summary_data), pd.DataFrame(param_data)
+
+def get_ai_insights(groq_client, calculation_data, context_data):
     """Get AI-powered insights using Groq"""
     if not groq_client:
         return None
@@ -973,7 +788,79 @@ def main():
     with tab3:
         st.subheader("📄 Export & Sharing")
         
-        # Create comprehensive export data
+        st.markdown("### 🚀 Export Options")
+        st.info("Wählen Sie das passende Format für Ihren Anwendungsfall:")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**📊 Für detaillierte Analyse:**")
+            if st.button("📊 Excel-Daten Export", help="Strukturierte Daten für weitere Analyse"):
+                with st.spinner("Erstelle Excel-Daten..."):
+                    try:
+                        context_data = {
+                            'hire_salary': st.session_state.get('hire_salary', 60000),
+                            'vacancy_months': st.session_state.get('vacancy_months', 3),
+                            'industry': st.session_state.get('industry', 'General'),
+                            'prod_loss_percent': st.session_state.get('prod_loss_percent', 40)
+                        }
+                        
+                        summary_df, param_df = create_excel_dataframe(results, context_data)
+                        
+                        # Create Excel file in memory
+                        excel_buffer = io.BytesIO()
+                        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                            summary_df.to_excel(writer, sheet_name='Zusammenfassung', index=False)
+                            param_df.to_excel(writer, sheet_name='Parameter', index=False)
+                        
+                        st.download_button(
+                            label="📥 Excel herunterladen",
+                            data=excel_buffer.getvalue(),
+                            file_name=f"hr_kostenvergleich_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                        st.success("✅ Excel-Datei erstellt!")
+                    except Exception as e:
+                        st.error(f"Excel-Export Fehler: {e}")
+            
+            st.markdown("**📋 Für vollständige Dokumentation:**")
+            if st.button("📄 Detaillierter CSV Report", help="Umfassender Textbericht"):
+                with st.spinner("Erstelle detaillierten Report..."):
+                    try:
+                        context_data = {
+                            'hire_salary': st.session_state.get('hire_salary', 60000),
+                            'vacancy_months': st.session_state.get('vacancy_months', 3),
+                            'industry': st.session_state.get('industry', 'General'),
+                            'prod_loss_percent': st.session_state.get('prod_loss_percent', 40)
+                        }
+                        
+                        ai_insights = getattr(st.session_state, 'ai_insights', None)
+                        ai_scenarios = getattr(st.session_state, 'ai_scenarios', None)
+                        detailed_report = create_detailed_csv_report(results, context_data, ai_insights, ai_scenarios)
+                        
+                        st.download_button(
+                            label="📥 Detaillierten Report herunterladen",
+                            data=detailed_report,
+                            file_name=f"hr_kostenvergleich_detail_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                            mime="text/plain"
+                        )
+                        st.success("✅ Detaillierter Report erstellt!")
+                    except Exception as e:
+                        st.error(f"Report-Export Fehler: {e}")
+        
+        with col2:
+            st.markdown("**📊 Für Präsentationen:**")
+            st.info("🚧 PowerPoint-Export in Entwicklung")
+            
+            st.markdown("**📝 Für Bearbeitung:**")  
+            st.info("🚧 Word-Export in Entwicklung")
+        
+        st.divider()
+        
+        # Quick data preview
+        st.markdown("### 📋 Datenvorschau")
+        
+        # Create export data preview
         export_data = {
             "Parameter": [
                 "Jahresgehalt Neubesetzung", "Vakanzdauer", "Branche", "Sozialabgaben", 
@@ -1012,15 +899,22 @@ def main():
         df_params = pd.DataFrame(export_data)
         df_results = pd.DataFrame(results_data)
         
-        st.write("**📊 Parameter:**")
-        st.dataframe(df_params, hide_index=True, use_container_width=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("**📊 Parameter:**")
+            st.dataframe(df_params, hide_index=True, use_container_width=True)
         
-        st.write("**💰 Ergebnisse:**")
-        st.dataframe(df_results, hide_index=True, use_container_width=True)
+        with col2:
+            st.write("**💰 Ergebnisse:**")
+            st.dataframe(df_results, hide_index=True, use_container_width=True)
         
-        # Enhanced export with AI insights
-        csv_data = "HR KOSTENVERGLEICH - DETAILBERICHT\n"
-        csv_data += "=" * 50 + "\n\n"
+        # Legacy CSV export
+        st.divider()
+        st.markdown("### 📊 Einfacher Export")
+        
+        # Simple CSV export
+        csv_data = "HR KOSTENVERGLEICH - ÜBERSICHT\n"
+        csv_data += "=" * 40 + "\n\n"
         csv_data += f"Erstellt am: {datetime.now().strftime('%d.%m.%Y %H:%M')}\n"
         csv_data += f"Branche: {st.session_state.get('industry', 'General')}\n\n"
         csv_data += "PARAMETER:\n" + df_params.to_csv(index=False) + "\n"
@@ -1035,7 +929,7 @@ def main():
             csv_data += st.session_state.ai_scenarios + "\n"
         
         st.download_button(
-            label="📥 Vollständigen Bericht als CSV herunterladen",
+            label="📥 Einfacher CSV Export",
             data=csv_data,
             file_name=f"hr_kostenvergleich_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
             mime="text/csv"
