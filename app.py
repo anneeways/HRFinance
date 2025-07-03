@@ -9,7 +9,7 @@ from datetime import datetime
 
 # Page configuration
 st.set_page_config(
-    page_title="AI-Powered HR Kostenvergleich",
+    page_title="HR Kostenvergleich",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -334,7 +334,7 @@ def main():
     st.title("🤖 AI-Powered HR Kostenvergleich")
     st.markdown("""
     **Intelligenter Kostenvergleich** zwischen Neubesetzung und Gehaltserhöhung mit **KI-gestützten Insights** 
-    von Groq. Alle Werte sind editierbar und werden in Echtzeit mit AI-Empfehlungen aktualisiert.
+    . Alle Werte sind editierbar und werden in Echtzeit mit AI-Empfehlungen aktualisiert.
     """)
     
     # Groq API Key input (if not in secrets)
