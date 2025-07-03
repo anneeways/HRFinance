@@ -9,7 +9,7 @@ from datetime import datetime
 
 # Page configuration
 st.set_page_config(
-    page_title="HR Kostenvergleich",
+    page_title="AI-Powered HR Kostenvergleich",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -24,7 +24,7 @@ def init_groq():
             return None
         return groq.Groq(api_key=api_key)
     except Exception as e:
-        st.error(f"Groq initialization error: {e}")
+        st.error(f"KI-Initialisierung Fehler: {e}")
         return None
 
 # Industry templates
@@ -117,14 +117,14 @@ def get_ai_insights(groq_client, calculation_data, context_data):
                 "role": "user", 
                 "content": prompt
             }],
-            model="llama-3.1-70b-versatile",
+            model="llama-3.1-8b-instant",
             temperature=0.3,
             max_tokens=1000
         )
         
         return chat_completion.choices[0].message.content
     except Exception as e:
-        st.error(f"AI Analysis Error: {e}")
+        st.error(f"KI-Analyse Fehler: {e}")
         return None
 
 def get_ai_scenarios(groq_client, calculation_data):
@@ -158,14 +158,14 @@ def get_ai_scenarios(groq_client, calculation_data):
                 "role": "user", 
                 "content": prompt
             }],
-            model="llama-3.1-70b-versatile",
+            model="llama-3.1-8b-instant",
             temperature=0.5,
             max_tokens=800
         )
         
         return chat_completion.choices[0].message.content
     except Exception as e:
-        st.error(f"Scenario Generation Error: {e}")
+        st.error(f"Szenario-Generierung Fehler: {e}")
         return None
 
 def load_template(template_name):
@@ -333,21 +333,21 @@ def main():
     # Header
     st.title("🤖 AI-Powered HR Kostenvergleich")
     st.markdown("""
-    **Intelligenter Kostenvergleich** zwischen Neubesetzung und Gehaltserhöhung mit **KI-gestützten Insights** 
-    . Alle Werte sind editierbar und werden in Echtzeit mit AI-Empfehlungen aktualisiert.
+    **Intelligenter Kostenvergleich** zwischen Neubesetzung und Gehaltserhöhung mit **KI-gestützten Insights**. 
+    Alle Werte sind editierbar und werden in Echtzeit mit AI-Empfehlungen aktualisiert.
     """)
     
-    # Groq API Key input (if not in secrets)
+    # AI API Key input (if not in secrets)
     groq_client = init_groq()
     if not groq_client:
-        with st.expander("🔑 Groq API Setup", expanded=True):
-            st.info("Für AI-Features benötigen Sie einen Groq API Key.")
-            api_key = st.text_input("Groq API Key", type="password", help="Erhalten Sie Ihren kostenlosen API Key auf https://groq.com")
+        with st.expander("🔑 AI Setup", expanded=True):
+            st.info("Für AI-Features benötigen Sie einen API Key.")
+            api_key = st.text_input("AI API Key", type="password", help="API Key für KI-Funktionen")
             if api_key:
                 st.session_state.groq_api_key = api_key
                 groq_client = init_groq()
                 if groq_client:
-                    st.success("✅ Groq erfolgreich verbunden!")
+                    st.success("✅ AI erfolgreich verbunden!")
                     st.rerun()
     
     # Sidebar for main assumptions
@@ -427,7 +427,7 @@ def main():
             st.header("🧠 KI-gestützte Strategieanalyse")
             
             if st.button("🚀 AI-Analyse generieren", type="primary"):
-                with st.spinner("🤖 Groq analysiert Ihre Daten..."):
+                with st.spinner("🤖 KI analysiert Ihre Daten..."):
                     context_data = {
                         'hire_salary': st.session_state.get('hire_salary', 60000),
                         'vacancy_months': st.session_state.get('vacancy_months', 3),
@@ -565,7 +565,7 @@ def main():
         st.header("🔮 KI-generierte What-If-Szenarien")
         
         if st.button("🎲 AI-Szenarien generieren"):
-            with st.spinner("🤖 Groq erstellt Szenarien..."):
+            with st.spinner("🤖 KI erstellt Szenarien..."):
                 scenarios = get_ai_scenarios(groq_client, results)
                 
                 if scenarios:
@@ -748,7 +748,7 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #666; padding: 20px;'>
-        <p>🤖 Powered by <strong>Groq AI</strong> | 🐍 Built with <strong>Streamlit</strong> | 💼 HR Intelligence Platform</p>
+        <p>🤖 Powered by <strong>Künstliche Intelligenz</strong> | 🐍 Built with <strong>Streamlit</strong> | 💼 HR Intelligence Platform</p>
         <p><small>Alle Berechnungen sind Schätzungen. Konsultieren Sie einen HR-Experten für finale Entscheidungen.</small></p>
     </div>
     """, unsafe_allow_html=True)
