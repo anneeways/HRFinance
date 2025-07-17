@@ -1,5 +1,5 @@
-# Create the complete corrected Streamlit application
-complete_code = '''import streamlit as st
+# Create the complete corrected code file
+complete_code = """import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -79,16 +79,16 @@ INDUSTRY_TEMPLATES = {
 }
 
 def create_detailed_csv_report(results, context_data, ai_insights=None, ai_scenarios=None):
-    """Generate a comprehensive CSV report"""
+    \"\"\"Generate a comprehensive CSV report\"\"\"
     report = []
     
     # Header
-    report.append("HR KOSTENVERGLEICH - DETAILBERICHT (INCREMENTAL ANALYSIS)")
+    report.append("HR KOSTENVERGLEICH - DETAILBERICHT (INKREMENTELLE KOSTEN)")
     report.append("=" * 60)
     report.append("")
     report.append(f"Erstellt am: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
     report.append(f"Branche: {context_data.get('industry', 'General')}")
-    report.append("Vergleichstyp: Inkrementelle Kosten (Zusatzkosten)")
+    report.append("HINWEIS: Vergleich basiert auf inkrementellen Kosten (Zusatzkosten)")
     report.append("")
     
     # Executive Summary
@@ -102,20 +102,20 @@ def create_detailed_csv_report(results, context_data, ai_insights=None, ai_scena
     report.append(f"Empfehlung: {recommendation}")
     report.append(f"Neubesetzung Zusatzkosten: {results['total_hire']:,.0f} €")
     report.append(f"Gehaltserhöhung Kosten: {results['total_salary_increase']:,.0f} €")
+    report.append(f"Gehaltsdifferenz (Neu vs. Aktuell): {results.get('hire_vs_current_salary', 0):,.0f} €")
     report.append("")
     
     # Parameters
     report.append("PARAMETER")
     report.append("-" * 20)
     report.append(f"Jahresgehalt (Neubesetzung): {context_data.get('hire_salary', 0):,.0f} €")
-    report.append(f"Aktuelles Gehalt: {context_data.get('current_salary', 0):,.0f} €")
-    report.append(f"Gehaltsdifferenz: {results.get('hire_vs_current_salary', 0):,.0f} €")
+    report.append(f"Aktuelles Jahresgehalt: {context_data.get('current_salary', 0):,.0f} €")
     report.append(f"Vakanzdauer: {context_data.get('vacancy_months', 0)} Monate")
     report.append(f"Produktivitätsverlust: {context_data.get('prod_loss_percent', 0)}%")
     report.append("")
     
     # Cost Breakdown
-    report.append("KOSTENAUFSCHLÜSSELUNG NEUBESETZUNG (ZUSATZKOSTEN)")
+    report.append("KOSTENAUFSCHLÜSSELUNG NEUBESETZUNG (INKREMENTELL)")
     report.append("-" * 50)
     report.append(f"Recruiting: {results['recruiting']['sum']:,.0f} € ({results['recruiting']['sum']/results['total_hire']*100:.1f}%)")
     report.append(f"Vakanz: {results['vacancy']['sum']:,.0f} € ({results['vacancy']['sum']/results['total_hire']*100:.1f}%)")
@@ -123,7 +123,7 @@ def create_detailed_csv_report(results, context_data, ai_insights=None, ai_scena
     report.append(f"Produktivitätsverlust: {results['productivity']['sum']:,.0f} € ({results['productivity']['sum']/results['total_hire']*100:.1f}%)")
     report.append(f"Weitere Kosten: {results['other']['sum']:,.0f} € ({results['other']['sum']/results['total_hire']*100:.1f}%)")
     report.append(f"Gehaltsdifferenz: {results['salary_difference']['sum']:,.0f} € ({results['salary_difference']['sum']/results['total_hire']*100:.1f}%)")
-    report.append(f"GESAMT ZUSATZKOSTEN: {results['total_hire']:,.0f} €")
+    report.append(f"GESAMT INKREMENTELL: {results['total_hire']:,.0f} €")
     report.append("")
     
     # Detailed costs
@@ -162,11 +162,11 @@ def create_detailed_csv_report(results, context_data, ai_insights=None, ai_scena
     return "\\n".join(report)
 
 def create_excel_dataframe(results, context_data):
-    """Create structured data for Excel export"""
+    \"\"\"Create structured data for Excel export\"\"\"
     # Summary data
     summary_data = {
         'Kostenart': [
-            'Neubesetzung Zusatzkosten Gesamt',
+            'Neubesetzung Zusatzkosten',
             '- Recruiting',
             '- Vakanz', 
             '- Onboarding',
@@ -204,22 +204,20 @@ def create_excel_dataframe(results, context_data):
     param_data = {
         'Parameter': [
             'Jahresgehalt (Neubesetzung)',
-            'Aktuelles Gehalt',
+            'Aktuelles Jahresgehalt',
             'Gehaltsdifferenz',
             'Vakanzdauer',
             'Branche',
             'Produktivitätsverlust',
-            'Vergleichstyp',
             'Analyse-Datum'
         ],
         'Wert': [
             f"{context_data.get('hire_salary', 0):,.0f} €",
             f"{context_data.get('current_salary', 0):,.0f} €",
-            f"{results.get('hire_vs_current_salary', 0):,.0f} €",
+            f"{context_data.get('hire_salary', 0) - context_data.get('current_salary', 0):,.0f} €",
             f"{context_data.get('vacancy_months', 0)} Monate",
             context_data.get('industry', 'General'),
             f"{context_data.get('prod_loss_percent', 0)}%",
-            "Inkrementelle Kosten",
             datetime.now().strftime('%d.%m.%Y %H:%M')
         ]
     }
@@ -227,29 +225,27 @@ def create_excel_dataframe(results, context_data):
     return pd.DataFrame(summary_data), pd.DataFrame(param_data)
 
 def get_ai_insights(groq_client, calculation_data, context_data):
-    """Get AI-powered insights using Groq"""
+    \"\"\"Get AI-powered insights using Groq\"\"\"
     if not groq_client:
         return None
     
     try:
-        prompt = f"""
+        prompt = f\"\"\"
         Als HR-Experte analysiere bitte diese INKREMENTELLEN Kostenvergleichsdaten und gib strategische Empfehlungen:
 
-        WICHTIG: Dies ist ein Vergleich von ZUSATZKOSTEN (inkrementelle Analyse):
-        - Neubesetzung: Alle Zusatzkosten im Vergleich zum aktuellen Mitarbeiter
-        - Gehaltserhöhung: Nur die zusätzlichen Kosten der Erhöhung
+        WICHTIG: Dies ist ein Vergleich von ZUSATZKOSTEN (inkrementell), nicht Gesamtkosten!
 
         KOSTENDATEN:
         - Neubesetzung Zusatzkosten: {calculation_data['total_hire']:,.0f} €
         - Gehaltserhöhung Kosten: {calculation_data['total_salary_increase']:,.0f} €
         - Neues Jahresgehalt: {context_data['hire_salary']:,.0f} €
-        - Aktuelles Gehalt: {context_data.get('current_salary', 60000):,.0f} €
-        - Gehaltsdifferenz: {calculation_data.get('hire_vs_current_salary', 0):,.0f} €
+        - Aktuelles Jahresgehalt: {context_data.get('current_salary', 60000):,.0f} €
+        - Gehaltsdifferenz: {context_data['hire_salary'] - context_data.get('current_salary', 60000):,.0f} €
         - Branche: {context_data.get('industry', 'Unbekannt')}
         - Vakanzdauer: {context_data['vacancy_months']} Monate
         - Produktivitätsverlust: {context_data['prod_loss_percent']}%
 
-        KOSTENAUFSCHLÜSSELUNG:
+        KOSTENAUFSCHLÜSSELUNG (ZUSATZKOSTEN):
         - Recruiting: {calculation_data['recruiting']['sum']:,.0f} €
         - Vakanz: {calculation_data['vacancy']['sum']:,.0f} €
         - Onboarding: {calculation_data['onboarding']['sum']:,.0f} €
@@ -264,14 +260,14 @@ def get_ai_insights(groq_client, calculation_data, context_data):
         4. Risikobewertung für beide Optionen
         5. Langzeit-Perspektive (3-5 Jahre)
 
-        Berücksichtige, dass dies eine inkrementelle Kostenanalyse ist.
+        Berücksichtige, dass dies ein inkrementeller Kostenvergleich ist!
         Antworte auf Deutsch, präzise und geschäftsorientiert.
-        """
+        \"\"\"
 
         chat_completion = groq_client.chat.completions.create(
             messages=[{
                 "role": "system",
-                "content": "Du bist ein erfahrener HR-Strategieberater mit 15+ Jahren Erfahrung in Personalkosten-Optimierung und inkrementeller Kostenanalyse."
+                "content": "Du bist ein erfahrener HR-Strategieberater mit 15+ Jahren Erfahrung in Personalkosten-Optimierung und verstehst inkrementelle Kostenanalysen."
             }, {
                 "role": "user", 
                 "content": prompt
@@ -287,13 +283,13 @@ def get_ai_insights(groq_client, calculation_data, context_data):
         return None
 
 def get_ai_scenarios(groq_client, calculation_data):
-    """Generate AI-powered what-if scenarios"""
+    \"\"\"Generate AI-powered what-if scenarios\"\"\"
     if not groq_client:
         return None
     
     try:
-        prompt = f"""
-        Erstelle 3 realistische What-If-Szenarien für diesen HR-Kostenvergleich (INKREMENTELLE ANALYSE):
+        prompt = f\"\"\"
+        Erstelle 3 realistische What-If-Szenarien für diesen HR-Kostenvergleich (INKREMENTELLE KOSTEN):
 
         BASISDATEN:
         - Neubesetzung Zusatzkosten: {calculation_data['total_hire']:,.0f} €
@@ -309,9 +305,8 @@ def get_ai_scenarios(groq_client, calculation_data):
         - Geschätzte Kostenveränderung in % 
         - Empfehlung für dieses Szenario
 
-        Berücksichtige, dass dies eine inkrementelle Kostenanalyse ist.
         Format als strukturierten Text, nicht als JSON.
-        """
+        \"\"\"
 
         chat_completion = groq_client.chat.completions.create(
             messages=[{
@@ -329,14 +324,14 @@ def get_ai_scenarios(groq_client, calculation_data):
         return None
 
 def load_template(template_name):
-    """Load industry template into session state"""
+    \"\"\"Load industry template into session state\"\"\"
     template = INDUSTRY_TEMPLATES[template_name]
     for key, value in template.items():
         st.session_state[key] = value
     st.session_state['industry'] = template_name
 
 def reset_to_defaults():
-    """Reset all values to defaults"""
+    \"\"\"Reset all values to defaults\"\"\"
     defaults = {
         # Basic assumptions
         "hire_salary": 60000,
@@ -394,13 +389,13 @@ def reset_to_defaults():
         st.session_state[key] = value
 
 def initialize_session_state():
-    """Initialize session state with default values"""
+    \"\"\"Initialize session state with default values\"\"\"
     if 'initialized' not in st.session_state:
         reset_to_defaults()
         st.session_state.initialized = True
 
 def calculate_costs():
-    """Calculate all costs and return results - FIXED for proper incremental comparison"""
+    \"\"\"Calculate all costs and return results - FIXED for proper incremental comparison\"\"\"
     # Get values from session state
     hire_salary = st.session_state.get('hire_salary', 60000)
     vacancy_months = st.session_state.get('vacancy_months', 3)
@@ -506,12 +501,12 @@ def main():
     
     # Header
     st.title("🤖 AI-Powered HR Kostenvergleich")
-    st.markdown("""
+    st.markdown(\"\"\"
     **Intelligenter Kostenvergleich** zwischen Neubesetzung und Gehaltserhöhung mit **KI-gestützten Insights**. 
     Alle Werte sind editierbar und werden in Echtzeit mit AI-Empfehlungen aktualisiert.
     
-    ⚡ **Inkrementelle Analyse**: Vergleicht nur die Zusatzkosten beider Optionen.
-    """)
+    ⚡ **Inkrementeller Vergleich**: Zeigt nur die Zusatzkosten beider Optionen.
+    \"\"\")
     
     # AI API Key input (if not in secrets)
     groq_client = init_groq()
@@ -574,9 +569,494 @@ def main():
                  help="Wie viel Prozent der Arbeitsleistung fehlen pro Monat während der Einarbeitung?")
         
         # Show salary difference
-        hire_sal = st.session_state.get('hire_salary', 60000)
-        current_sal = st.session_state.get('current_salary', 60000)
-        diff = hire_sal - current_sal
-        if diff > 0:
-            st.info(f"💰 Neuer Mitarbeiter kostet {diff:,.0f} € mehr pro Jahr")
-        elif diff
+        salary_diff = st.session_state.get('hire_salary', 60000) - st.session_state.get('current_salary', 60000)
+        if salary_diff > 0:
+            st.success(f"💰 Neuer MA kostet {salary_diff:,.0f} € mehr/Jahr")
+        elif salary_diff < 0:
+            st.info(f"💰 Neuer MA kostet {abs(salary_diff):,.0f} € weniger/Jahr")
+        else:
+            st.info("💰 Gleiches Gehaltsniveau")
+        
+        # AI Features toggle
+        st.divider()
+        st.subheader("🤖 AI Features")
+        use_ai_insights = st.checkbox("AI-Insights aktivieren", value=bool(groq_client))
+        use_ai_scenarios = st.checkbox("AI-Szenarien generieren", value=bool(groq_client))
+    
+    # Main content area
+    results = calculate_costs()
+    
+    # Top-level metrics with improved labeling
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("💼 Neubesetzung (Zusatzkosten)", f"{results['total_hire']:,.0f} €", 
+                 delta=f"{results['total_hire'] - results['total_salary_increase']:+,.0f} €")
+    with col2:
+        st.metric("💰 Gehaltserhöhung", f"{results['total_salary_increase']:,.0f} €")
+    with col3:
+        difference = abs(results['total_hire'] - results['total_salary_increase'])
+        percentage = (difference / min(results['total_hire'], results['total_salary_increase'])) * 100
+        st.metric("💡 Ersparnis", f"{difference:,.0f} €", f"{percentage:.1f}%")
+    
+    # Enhanced recommendation with salary context
+    salary_diff = results.get('hire_vs_current_salary', 0)
+    if results['total_hire'] > results['total_salary_increase']:
+        st.success("🎯 **KI-Empfehlung: Gehaltserhöhung ist günstiger**")
+        st.info(f"💰 Sie sparen {difference:,.0f} € ({percentage:.1f}%) mit einer Gehaltserhöhung")
+        if salary_diff > 0:
+            st.warning(f"⚠️ Hinweis: Neuer Mitarbeiter würde {salary_diff:,.0f} € mehr kosten")
+    else:
+        st.info("🎯 **KI-Empfehlung: Neubesetzung ist günstiger**")
+        st.success(f"💰 Sie sparen {difference:,.0f} € ({percentage:.1f}%) mit einer Neubesetzung")
+        if salary_diff < 0:
+            st.info(f"💡 Bonus: Neuer Mitarbeiter kostet {abs(salary_diff):,.0f} € weniger")
+    
+    # AI Insights Section
+    if groq_client and use_ai_insights:
+        with st.container():
+            st.header("🧠 KI-gestützte Strategieanalyse")
+            
+            if st.button("🚀 AI-Analyse generieren", type="primary"):
+                with st.spinner("🤖 KI analysiert Ihre Daten..."):
+                    context_data = {
+                        'hire_salary': st.session_state.get('hire_salary', 60000),
+                        'current_salary': st.session_state.get('current_salary', 60000),
+                        'vacancy_months': st.session_state.get('vacancy_months', 3),
+                        'prod_loss_percent': st.session_state.get('prod_loss_percent', 40),
+                        'industry': st.session_state.get('industry', 'General')
+                    }
+                    
+                    insights = get_ai_insights(groq_client, results, context_data)
+                    
+                    if insights:
+                        st.success("✅ AI-Analyse abgeschlossen!")
+                        st.markdown("### 🎯 Strategische Empfehlungen")
+                        st.markdown(insights)
+                        
+                        # Save insights to session state
+                        st.session_state.ai_insights = insights
+                        st.session_state.insights_timestamp = datetime.now()
+            
+            # Display cached insights if available
+            if hasattr(st.session_state, 'ai_insights'):
+                st.markdown("### 📋 Letzte AI-Analyse")
+                st.info(f"Erstellt: {st.session_state.insights_timestamp.strftime('%d.%m.%Y %H:%M')}")
+                st.markdown(st.session_state.ai_insights)
+    
+    # Detailed input sections
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        # Detailed cost inputs
+        st.header("🏢 Neubesetzung - Detailkosten")
+        
+        # Recruiting costs
+        with st.expander("🧲 Recruiting-Kosten", expanded=False):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.number_input("Stellenanzeigen (Anzahl)", min_value=0, key="anzeigen_qty")
+                st.number_input("Stellenanzeigen (€ pro Anzeige)", min_value=0, key="anzeigen_price")
+                st.number_input("Personalberater (%)", min_value=0, max_value=50, key="berater_percent")
+            with col_b:
+                st.number_input("Interview-Stunden", min_value=0, key="interview_hours")
+                st.number_input("Interview-Stundensatz (€)", min_value=0, key="interview_rate")
+                st.number_input("Assessment Center (€)", min_value=0, key="assessment_price")
+        
+        # Vacancy costs  
+        with st.expander("⏳ Vakanz-Kosten", expanded=False):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.number_input("Entgangene Produktivität (€/Monat)", min_value=0, key="produkt_price")
+                st.number_input("Überstunden (Anzahl)", min_value=0, key="ueberstunden_qty")
+                st.number_input("Überstunden (€/Std)", min_value=0, key="ueberstunden_price")
+            with col_b:
+                st.number_input("Externe Unterstützung (Tage)", min_value=0, key="extern_qty")
+                st.number_input("Externe Unterstützung (€/Tag)", min_value=0, key="extern_price")
+                st.number_input("Monatliches Gehalt (€)", min_value=0, key="gehalt_price")
+        
+        # Onboarding costs
+        with st.expander("🎓 Onboarding-Kosten", expanded=False):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.number_input("HR-Aufwand (Stunden)", min_value=0, key="hr_hours")
+                st.number_input("HR-Stundensatz (€)", min_value=0, key="hr_rate")
+                st.number_input("Einarbeitung Kollegen (Stunden)", min_value=0, key="kollegen_hours")
+                st.number_input("Kollegen-Stundensatz (€)", min_value=0, key="kollegen_rate")
+            with col_b:
+                st.number_input("Schulungen/Training (€)", min_value=0, key="training_cost")
+                st.number_input("IT-Setup & Equipment (€)", min_value=0, key="it_cost")
+                st.number_input("Mentor-Stunden", min_value=0, key="mentor_hours")
+                st.number_input("Mentor-Stundensatz (€)", min_value=0, key="mentor_rate")
+        
+        # Other costs
+        with st.expander("⚠️ Weitere Kosten", expanded=False):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.number_input("Fehlerrate (€)", min_value=0, key="fehler_cost")
+                st.number_input("Know-how-Verlust (€)", min_value=0, key="knowhow_cost")
+            with col_b:
+                st.number_input("Kundenbindung/Umsatzverluste (€)", min_value=0, key="kunden_cost")
+                st.number_input("Team-Moral (€)", min_value=0, key="team_cost")
+        
+        # Salary increase section
+        st.header("💰 Alternative: Gehaltserhöhung")
+        with st.expander("💶 Gehaltserhöhung Details", expanded=True):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.number_input("Erhöhung (%)", min_value=0, max_value=50, key="increase_percent")
+            with col_b:
+                st.number_input("Sozialabgaben auf Erhöhung (%)", min_value=0, key="social_increase_percent")
+                st.number_input("Benefits auf Erhöhung (%)", min_value=0, key="benefits_increase_percent")
+    
+    with col2:
+        # Cost breakdown chart - UPDATED for incremental costs
+        st.subheader("📊 Zusatzkosten-Verteilung")
+        
+        categories = ["Recruiting", "Vakanz", "Onboarding", "Produktivität", "Weitere", "Gehaltsdifferenz"]
+        values = [
+            results['recruiting']['sum'],
+            results['vacancy']['sum'],
+            results['onboarding']['sum'],
+            results['productivity']['sum'],
+            results['other']['sum'],
+            results['salary_difference']['sum']
+        ]
+        
+        # Filter out zero or negative values for better visualization
+        filtered_data = [(cat, val) for cat, val in zip(categories, values) if val > 0]
+        if filtered_data:
+            filtered_categories, filtered_values = zip(*filtered_data)
+            
+            fig = px.pie(
+                values=filtered_values,
+                names=filtered_categories,
+                title="Neubesetzung - Zusatzkosten-Verteilung",
+                color_discrete_sequence=px.colors.qualitative.Set3
+            )
+            fig.update_traces(textposition='inside', textinfo='percent+label')
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Comparison chart
+        st.subheader("⚖️ Direktvergleich (Inkrementell)")
+        comparison_data = {
+            "Option": ["Neubesetzung\\n(Zusatzkosten)", "Gehaltserhöhung"],
+            "Kosten": [results['total_hire'], results['total_salary_increase']]
+        }
+        
+        fig2 = px.bar(
+            comparison_data,
+            x="Option",
+            y="Kosten",
+            title="Inkrementeller Kostenvergleich",
+            color="Kosten",
+            color_continuous_scale="RdYlGn_r"
+        )
+        fig2.update_layout(showlegend=False, height=300)
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        # Salary comparison info box
+        st.info(f\"\"\"
+        **💰 Gehaltsvergleich:**
+        - Aktuell: {st.session_state.get('current_salary', 60000):,.0f} €
+        - Neu: {st.session_state.get('hire_salary', 60000):,.0f} €
+        - Differenz: {results.get('hire_vs_current_salary', 0):+,.0f} €
+        \"\"\")
+    
+    # AI Scenarios Section
+    if groq_client and use_ai_scenarios:
+        st.header("🔮 KI-generierte What-If-Szenarien")
+        
+        if st.button("🎲 AI-Szenarien generieren"):
+            with st.spinner("🤖 KI erstellt Szenarien..."):
+                scenarios = get_ai_scenarios(groq_client, results)
+                
+                if scenarios:
+                    st.success("✅ Szenarien generiert!")
+                    st.markdown("### 📈 What-If-Szenarien")
+                    st.markdown(scenarios)
+                    
+                    # Save scenarios to session state
+                    st.session_state.ai_scenarios = scenarios
+                    st.session_state.scenarios_timestamp = datetime.now()
+        
+        # Display cached scenarios if available
+        if hasattr(st.session_state, 'ai_scenarios'):
+            st.markdown("### 📋 Letzte AI-Szenarien")
+            st.info(f"Erstellt: {st.session_state.scenarios_timestamp.strftime('%d.%m.%Y %H:%M')}")
+            st.markdown(st.session_state.ai_scenarios)
+    
+    # Detailed breakdown at bottom
+    st.header("📋 Detaillierte Kostenaufschlüsselung")
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["💼 Neubesetzung Details", "💰 Gehaltserhöhung Details", "📄 Export", "🤖 AI History"])
+    
+    with tab1:
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.subheader("🧲 Recruiting")
+            for item, cost in results['recruiting']['costs'].items():
+                st.write(f"{item}: {cost:,.0f} €")
+            st.write(f"**Summe: {results['recruiting']['sum']:,.0f} €**")
+            
+            st.subheader("🎓 Onboarding")
+            for item, cost in results['onboarding']['costs'].items():
+                st.write(f"{item}: {cost:,.0f} €")
+            st.write(f"**Summe: {results['onboarding']['sum']:,.0f} €**")
+        
+        with col2:
+            st.subheader("⏳ Vakanz")
+            for item, cost in results['vacancy']['costs'].items():
+                st.write(f"{item}: {cost:,.0f} €")
+            st.write(f"**Summe: {results['vacancy']['sum']:,.0f} €**")
+            
+            st.subheader("⚠️ Weitere Kosten")
+            for item, cost in results['other']['costs'].items():
+                st.write(f"{item}: {cost:,.0f} €")
+            st.write(f"**Summe: {results['other']['sum']:,.0f} €**")
+        
+        with col3:
+            st.subheader("📉 Produktivitätsverlust")
+            st.write(f"Monatlicher Verlust: {results['productivity']['sum']/st.session_state.vacancy_months:,.0f} €")
+            st.write(f"**Gesamtverlust: {results['productivity']['sum']:,.0f} €**")
+            
+            st.subheader("💶 Gehaltsdifferenz")
+            salary_diff = results.get('hire_vs_current_salary', 0)
+            st.write(f"Neues Gehalt: {st.session_state.hire_salary:,.0f} €")
+            st.write(f"Aktuelles Gehalt: {st.session_state.current_salary:,.0f} €")
+            st.write(f"Differenz: {salary_diff:+,.0f} €")
+            st.write(f"**Jährliche Mehrkosten: {results['salary_difference']['sum']:,.0f} €**")
+    
+    with tab2:
+        breakdown = results['salary_breakdown']
+        st.subheader("💰 Gehaltserhöhung Aufschlüsselung")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Grunderhöhung", f"{breakdown['increase']:,.0f} €")
+            st.metric("Sozialabgaben", f"{breakdown['social']:,.0f} €")
+            st.metric("Benefits", f"{breakdown['benefits']:,.0f} €")
+        with col2:
+            st.metric("**Gesamtkosten**", f"**{results['total_salary_increase']:,.0f} €**")
+            
+            # Visualization of salary increase breakdown
+            fig_salary = px.pie(
+                values=[breakdown['increase'], breakdown['social'], breakdown['benefits']],
+                names=['Grunderhöhung', 'Sozialabgaben', 'Benefits'],
+                title="Gehaltserhöhung Aufschlüsselung"
+            )
+            st.plotly_chart(fig_salary, use_container_width=True)
+    
+    with tab3:
+        st.subheader("📄 Export & Sharing")
+        
+        st.markdown("### 🚀 Export Options")
+        st.info("Wählen Sie das passende Format für Ihren Anwendungsfall:")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**📊 Für detaillierte Analyse:**")
+            if st.button("📊 Excel-Daten Export", help="Strukturierte Daten für weitere Analyse"):
+                with st.spinner("Erstelle Excel-Daten..."):
+                    try:
+                        context_data = {
+                            'hire_salary': st.session_state.get('hire_salary', 60000),
+                            'current_salary': st.session_state.get('current_salary', 60000),
+                            'vacancy_months': st.session_state.get('vacancy_months', 3),
+                            'industry': st.session_state.get('industry', 'General'),
+                            'prod_loss_percent': st.session_state.get('prod_loss_percent', 40)
+                        }
+                        
+                        summary_df, param_df = create_excel_dataframe(results, context_data)
+                        
+                        # Create Excel file in memory
+                        excel_buffer = io.BytesIO()
+                        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                            summary_df.to_excel(writer, sheet_name='Zusammenfassung', index=False)
+                            param_df.to_excel(writer, sheet_name='Parameter', index=False)
+                        
+                        st.download_button(
+                            label="📥 Excel herunterladen",
+                            data=excel_buffer.getvalue(),
+                            file_name=f"hr_kostenvergleich_inkrementell_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                        st.success("✅ Excel-Datei erstellt!")
+                    except Exception as e:
+                        st.error(f"Excel-Export Fehler: {e}")
+            
+            st.markdown("**📋 Für vollständige Dokumentation:**")
+            if st.button("📄 Detaillierter CSV Report", help="Umfassender Textbericht"):
+                with st.spinner("Erstelle detaillierten Report..."):
+                    try:
+                        context_data = {
+                            'hire_salary': st.session_state.get('hire_salary', 60000),
+                            'current_salary': st.session_state.get('current_salary', 60000),
+                            'vacancy_months': st.session_state.get('vacancy_months', 3),
+                            'industry': st.session_state.get('industry', 'General'),
+                            'prod_loss_percent': st.session_state.get('prod_loss_percent', 40)
+                        }
+                        
+                        ai_insights = getattr(st.session_state, 'ai_insights', None)
+                        ai_scenarios = getattr(st.session_state, 'ai_scenarios', None)
+                        detailed_report = create_detailed_csv_report(results, context_data, ai_insights, ai_scenarios)
+                        
+                        st.download_button(
+                            label="📥 Detaillierten Report herunterladen",
+                            data=detailed_report,
+                            file_name=f"hr_kostenvergleich_inkrementell_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                            mime="text/plain"
+                        )
+                        st.success("✅ Detaillierter Report erstellt!")
+                    except Exception as e:
+                        st.error(f"Report-Export Fehler: {e}")
+        
+        with col2:
+            st.markdown("**📊 Für Präsentationen:**")
+            st.info("🚧 PowerPoint-Export in Entwicklung")
+            
+            st.markdown("**📝 Für Bearbeitung:**")  
+            st.info("🚧 Word-Export in Entwicklung")
+        
+        st.divider()
+        
+        # Quick data preview - UPDATED
+        st.markdown("### 📋 Datenvorschau (Inkrementell)")
+        
+        # Create export data preview
+        export_data = {
+            "Parameter": [
+                "Jahresgehalt Neubesetzung", "Aktuelles Jahresgehalt", "Gehaltsdifferenz",
+                "Vakanzdauer", "Branche", "Sozialabgaben", 
+                "Benefits", "Produktivitätsverlust", "Analyse-Datum"
+            ],
+            "Wert": [
+                f"{st.session_state.hire_salary:,} €", 
+                f"{st.session_state.current_salary:,} €",
+                f"{st.session_state.hire_salary - st.session_state.current_salary:+,} €",
+                f"{st.session_state.vacancy_months} Monate",
+                st.session_state.get('industry', 'General'),
+                f"{st.session_state.social_percent}%", 
+                f"{st.session_state.benefits_percent}%", 
+                f"{st.session_state.prod_loss_percent}%",
+                datetime.now().strftime('%d.%m.%Y %H:%M')
+            ]
+        }
+        
+        results_data = {
+            "Kostenart": [
+                "Neubesetzung Zusatzkosten", "Recruiting", "Vakanz", "Onboarding", 
+                "Produktivitätsverlust", "Weitere Kosten", "Gehaltsdifferenz",
+                "Gehaltserhöhung Gesamt", "Empfohlene Option"
+            ],
+            "Betrag": [
+                f"{results['total_hire']:,} €",
+                f"{results['recruiting']['sum']:,} €",
+                f"{results['vacancy']['sum']:,} €", 
+                f"{results['onboarding']['sum']:,} €",
+                f"{results['productivity']['sum']:,} €",
+                f"{results['other']['sum']:,} €",
+                f"{results['salary_difference']['sum']:,} €",
+                f"{results['total_salary_increase']:,} €",
+                "Gehaltserhöhung" if results['total_hire'] > results['total_salary_increase'] else "Neubesetzung"
+            ]
+        }
+        
+        df_params = pd.DataFrame(export_data)
+        df_results = pd.DataFrame(results_data)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("**📊 Parameter:**")
+            st.dataframe(df_params, hide_index=True, use_container_width=True)
+        
+        with col2:
+            st.write("**💰 Ergebnisse:**")
+            st.dataframe(df_results, hide_index=True, use_container_width=True)
+        
+        # Legacy CSV export - UPDATED
+        st.divider()
+        st.markdown("### 📊 Einfacher Export")
+        
+        # Simple CSV export
+        csv_data = "HR KOSTENVERGLEICH - ÜBERSICHT (INKREMENTELL)\\n"
+        csv_data += "=" * 50 + "\\n\\n"
+        csv_data += f"Erstellt am: {datetime.now().strftime('%d.%m.%Y %H:%M')}\\n"
+        csv_data += f"Branche: {st.session_state.get('industry', 'General')}\\n"
+        csv_data += "HINWEIS: Inkrementeller Kostenvergleich (nur Zusatzkosten)\\n\\n"
+        csv_data += "PARAMETER:\\n" + df_params.to_csv(index=False) + "\\n"
+        csv_data += "ERGEBNISSE:\\n" + df_results.to_csv(index=False) + "\\n"
+        
+        if hasattr(st.session_state, 'ai_insights'):
+            csv_data += "\\nKI-ANALYSE:\\n" + "=" * 20 + "\\n"
+            csv_data += st.session_state.ai_insights + "\\n"
+        
+        if hasattr(st.session_state, 'ai_scenarios'):
+            csv_data += "\\nKI-SZENARIEN:\\n" + "=" * 20 + "\\n"
+            csv_data += st.session_state.ai_scenarios + "\\n"
+        
+        st.download_button(
+            label="📥 Einfacher CSV Export",
+            data=csv_data,
+            file_name=f"hr_kostenvergleich_inkrementell_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            mime="text/csv"
+        )
+    
+    with tab4:
+        st.subheader("🤖 AI-Analyse History")
+        
+        if hasattr(st.session_state, 'ai_insights'):
+            st.markdown("### 🧠 Letzte Strategieanalyse")
+            st.info(f"Erstellt: {st.session_state.insights_timestamp.strftime('%d.%m.%Y %H:%M')}")
+            with st.expander("Vollständige Analyse anzeigen"):
+                st.markdown(st.session_state.ai_insights)
+        
+        if hasattr(st.session_state, 'ai_scenarios'):
+            st.markdown("### 🔮 Letzte Szenarien")
+            st.info(f"Erstellt: {st.session_state.scenarios_timestamp.strftime('%d.%m.%Y %H:%M')}")
+            with st.expander("Vollständige Szenarien anzeigen"):
+                st.markdown(st.session_state.ai_scenarios)
+        
+        if not hasattr(st.session_state, 'ai_insights') and not hasattr(st.session_state, 'ai_scenarios'):
+            st.info("🤷‍♂️ Noch keine AI-Analysen erstellt. Aktivieren Sie die AI-Features und generieren Sie Insights!")
+        
+        # Clear AI history
+        if st.button("🗑️ AI-History löschen"):
+            if hasattr(st.session_state, 'ai_insights'):
+                del st.session_state.ai_insights
+                del st.session_state.insights_timestamp
+            if hasattr(st.session_state, 'ai_scenarios'):
+                del st.session_state.ai_scenarios
+                del st.session_state.scenarios_timestamp
+            st.success("✅ AI-History gelöscht!")
+            st.rerun()
+
+    # Footer
+    st.markdown("---")
+    st.markdown(\"\"\"
+    <div style='text-align: center; color: #666; padding: 20px;'>
+        <p>🤖 Powered by <strong>Künstliche Intelligenz</strong>  💼 HR Intelligence Platform</p>
+        <p><small>⚡ Inkrementeller Kostenvergleich - Zeigt nur Zusatzkosten beider Optionen</small></p>
+        <p><small>Alle Berechnungen sind Schätzungen. Konsultieren Sie einen HR-Experten für finale Entscheidungen.</small></p>
+    </div>
+    \"\"\", unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
+"""
+
+# Write the complete corrected code to a file
+with open('hr_kostenvergleich_fixed_complete.py', 'w', encoding='utf-8') as f:
+    f.write(complete_code)
+
+print("✅ Complete corrected code saved to hr_kostenvergleich_fixed_complete.py")
+print("\n🔧 Key improvements made:")
+print("1. Fixed incremental cost comparison logic")
+print("2. Added current salary input in sidebar")
+print("3. Enhanced UI with salary difference indicators")
+print("4. Updated AI prompts for incremental context")
+print("5. Improved export functions with incremental labeling")
+print("6. Better visualization categories")
+print("7. Enhanced recommendations with salary context")
